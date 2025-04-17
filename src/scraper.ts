@@ -52,6 +52,7 @@ import {
   getArticle,
   getAllRetweeters,
   Retweeter,
+  getTweetWithReplies,
 } from './tweets';
 import {
   parseTimelineTweetsV2,
@@ -611,6 +612,14 @@ export class Scraper {
     } else {
       return getTweetAnonymous(id, this.auth);
     }
+  }
+
+  /**
+   * buttom cutsor 나 show more threads cursor 를 사용하세요.
+   * show more threads cursor 는 x 가 spam 일 수 있다고 판단한 경우 나오는 커서입니다.
+   */
+  public async getTweetWithReplies(id: string, cursor?: string) {
+    return await getTweetWithReplies(id, this.auth, cursor);
   }
 
   /**
