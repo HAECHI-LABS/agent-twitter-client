@@ -2,6 +2,22 @@
 
 This is a modified version of [@the-convocation/twitter-scraper](https://github.com/the-convocation/twitter-scraper) with added functionality for sending tweets and retweets. This package does not require the Twitter API to use and will run in both the browser and server.
 
+## 배포하는 법
+
+```sh
+npm run build
+git add -f dist
+git tag 0.0.18-haechi.xxx
+git push
+git push --tags
+```
+
+사용하는 곳에서
+```sh
+bun add github:haechi-labs/agent-twitter-client#0.0.18-haechi.xxx
+```
+
+
 ## Installation
 
 ```sh
