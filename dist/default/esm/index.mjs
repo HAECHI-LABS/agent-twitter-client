@@ -2124,6 +2124,49 @@ async function getTweet(id, auth) {
   const tweets = parseThreadedConversation(res.value);
   return tweets.find((tweet) => tweet.id === id) ?? null;
 }
+async function getTweetWithReplies(id, auth, cursor) {
+  const tweetDetailRequest = apiRequestFactory.createTweetDetailRequest();
+  tweetDetailRequest.variables.focalTweetId = id;
+  tweetDetailRequest.variables.cursor = cursor;
+  const res = await requestApi(
+    tweetDetailRequest.toRequestUrl(),
+    auth
+  );
+  if (!res.success) {
+    throw res.err;
+  }
+  if (!res.value) {
+    return null;
+  }
+  const tweets = parseThreadedConversation(res.value);
+  const tweet = tweets.find((tweet2) => tweet2.id === id) ?? null;
+  const replies = tweets.filter((tweet2) => tweet2.inReplyToStatusId === id);
+  let bottomCursor;
+  let topCursor;
+  let showMoreThreadsCursor;
+  for (const instruction of res.value.data?.threaded_conversation_with_injections_v2?.instructions ?? []) {
+    if (instruction.type === "TimelineAddEntries") {
+      for (const entry of instruction.entries ?? []) {
+        if (entry.content?.itemContent?.itemType === "TimelineTimelineCursor" && entry.content?.itemContent?.cursorType === "Bottom") {
+          bottomCursor = entry.content.itemContent.value;
+        }
+        if (entry.content?.itemContent?.itemType === "TimelineTimelineCursor" && entry.content?.itemContent?.cursorType === "Top") {
+          topCursor = entry.content.itemContent.value;
+        }
+        if (entry.content?.itemContent?.itemType === "TimelineTimelineCursor" && entry.content?.itemContent?.cursorType === "ShowMoreThreads") {
+          showMoreThreadsCursor = entry.content.itemContent.value;
+        }
+      }
+    }
+  }
+  return {
+    tweet,
+    replies,
+    bottomCursor,
+    topCursor,
+    showMoreThreadsCursor
+  };
+}
 async function getTweetAnonymous(id, auth) {
   const tweetResultByRestIdRequest = apiRequestFactory.createTweetResultByRestIdRequest();
   tweetResultByRestIdRequest.variables.tweetId = id;
@@ -3657,6 +3700,13 @@ class Scraper {
     } else {
       return getTweetAnonymous(id, this.auth);
     }
+  }
+  /**
+   * buttom cutsor 나 show more threads cursor 를 사용하세요.
+   * show more threads cursor 는 x 가 spam 일 수 있다고 판단한 경우 나오는 커서입니다.
+   */
+  async getTweetWithReplies(id, cursor) {
+    return await getTweetWithReplies(id, this.auth, cursor);
   }
   /**
    * Returns if the scraper has a guest token. The token may not be valid.

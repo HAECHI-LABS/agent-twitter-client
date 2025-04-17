@@ -692,6 +692,17 @@ declare class Scraper {
      */
     getTweet(id: string): Promise<Tweet | null>;
     /**
+     * buttom cutsor 나 show more threads cursor 를 사용하세요.
+     * show more threads cursor 는 x 가 spam 일 수 있다고 판단한 경우 나오는 커서입니다.
+     */
+    getTweetWithReplies(id: string, cursor?: string): Promise<{
+        tweet: Tweet | null;
+        replies: Tweet[];
+        bottomCursor: string | undefined;
+        topCursor: string | undefined;
+        showMoreThreadsCursor: string | undefined;
+    } | null>;
+    /**
      * Returns if the scraper has a guest token. The token may not be valid.
      * @returns `true` if the scraper has a guest token; otherwise `false`.
      */
