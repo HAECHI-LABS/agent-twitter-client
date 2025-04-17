@@ -18,6 +18,7 @@ export interface TimelineUserResultRaw {
 
 export interface TimelineEntryItemContentRaw {
   itemType?: string;
+  cursorType?: string;
   tweetDisplayType?: string;
   tweetResult?: {
     result?: TimelineResultRaw;
@@ -29,11 +30,13 @@ export interface TimelineEntryItemContentRaw {
   user_results?: {
     result?: TimelineUserResultRaw;
   };
+  value?: string;
 }
 
 export interface TimelineEntryRaw {
   entryId: string;
   content?: {
+    entryType?: string;
     cursorType?: string;
     value?: string;
     items?: {

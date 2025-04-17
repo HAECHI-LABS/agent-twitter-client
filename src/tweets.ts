@@ -635,6 +635,72 @@ export async function getTweet(
   return tweets.find((tweet) => tweet.id === id) ?? null;
 }
 
+export async function getTweetWithReplies(
+  id: string,
+  auth: TwitterAuth,
+  cursor?: string,
+) {
+  const tweetDetailRequest = apiRequestFactory.createTweetDetailRequest();
+  tweetDetailRequest.variables.focalTweetId = id;
+  tweetDetailRequest.variables.cursor = cursor;
+
+  const res = await requestApi<ThreadedConversation>(
+    tweetDetailRequest.toRequestUrl(),
+    auth,
+  );
+
+  if (!res.success) {
+    throw res.err;
+  }
+
+  if (!res.value) {
+    return null;
+  }
+
+  const tweets = parseThreadedConversation(res.value);
+  const tweet = tweets.find((tweet) => tweet.id === id) ?? null;
+  const replies = tweets.filter((tweet) => tweet.inReplyToStatusId === id);
+
+  let bottomCursor: string | undefined;
+  let topCursor: string | undefined;
+  let showMoreThreadsCursor: string | undefined;
+  for (const instruction of res.value.data
+    ?.threaded_conversation_with_injections_v2?.instructions ?? []) {
+    if (instruction.type === 'TimelineAddEntries') {
+      for (const entry of instruction.entries ?? []) {
+        if (
+          entry.content?.itemContent?.itemType === 'TimelineTimelineCursor' &&
+          entry.content?.itemContent?.cursorType === 'Bottom'
+        ) {
+          bottomCursor = entry.content.itemContent.value;
+        }
+
+        if (
+          entry.content?.itemContent?.itemType === 'TimelineTimelineCursor' &&
+          entry.content?.itemContent?.cursorType === 'Top'
+        ) {
+          topCursor = entry.content.itemContent.value;
+        }
+
+        if (
+          entry.content?.itemContent?.itemType === 'TimelineTimelineCursor' &&
+          entry.content?.itemContent?.cursorType === 'ShowMoreThreads'
+        ) {
+          showMoreThreadsCursor = entry.content.itemContent.value;
+        }
+      }
+    }
+  }
+
+  return {
+    tweet,
+    replies,
+    bottomCursor,
+    topCursor,
+    showMoreThreadsCursor,
+  };
+}
+
 export async function getTweetAnonymous(
   id: string,
   auth: TwitterAuth,
