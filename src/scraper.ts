@@ -8,11 +8,30 @@ import {
 import { TwitterAuth, TwitterAuthOptions, TwitterGuestAuth } from './auth';
 import { TwitterUserAuth } from './auth-user';
 import {
+  createGrokConversation,
+  grokChat,
+  GrokChatOptions,
+  GrokChatResponse,
+} from './grok';
+import {
+  DirectMessagesResponse,
+  getDirectMessageConversations,
+  sendDirectMessage,
+  SendDirectMessageResponse,
+} from './messages';
+import {
   getProfile,
-  getUserIdByScreenName,
   getScreenNameByUserId,
+  getUserIdByScreenName,
   Profile,
 } from './profile';
+import {
+  fetchProfileFollowers,
+  fetchProfileFollowing,
+  followUser,
+  getFollowers,
+  getFollowing,
+} from './relationships';
 import {
   fetchQuotedTweetsPage,
   fetchSearchProfiles,
@@ -22,52 +41,6 @@ import {
   searchTweets,
 } from './search';
 import {
-  fetchProfileFollowing,
-  fetchProfileFollowers,
-  getFollowing,
-  getFollowers,
-  followUser,
-} from './relationships';
-import { QueryProfilesResponse, QueryTweetsResponse } from './timeline-v1';
-import { getTrends } from './trends';
-import {
-  Tweet,
-  getTweetAnonymous,
-  getTweets,
-  getLatestTweet,
-  getTweetWhere,
-  getTweetsWhere,
-  getTweetsByUserId,
-  TweetQuery,
-  getTweet,
-  fetchListTweets,
-  getTweetsAndRepliesByUserId,
-  getTweetsAndReplies,
-  createCreateTweetRequest,
-  createQuoteTweetRequest,
-  likeTweet,
-  retweet,
-  createCreateNoteTweetRequest,
-  createCreateLongTweetRequest,
-  getArticle,
-  getAllRetweeters,
-  Retweeter,
-  getTweetWithReplies,
-} from './tweets';
-import {
-  parseTimelineTweetsV2,
-  TimelineArticle,
-  TimelineV2,
-} from './timeline-v2';
-import { fetchHomeTimeline } from './timeline-home';
-import { fetchFollowingTimeline } from './timeline-following';
-import {
-  DirectMessagesResponse,
-  getDirectMessageConversations,
-  sendDirectMessage,
-  SendDirectMessageResponse,
-} from './messages';
-import {
   fetchAudioSpaceById,
   fetchAuthenticatePeriscope,
   fetchBrowseSpaceTopics,
@@ -75,6 +48,39 @@ import {
   fetchLiveVideoStreamStatus,
   fetchLoginTwitterToken,
 } from './spaces';
+import { fetchFollowingTimeline } from './timeline-following';
+import { fetchHomeTimeline } from './timeline-home';
+import { QueryProfilesResponse, QueryTweetsResponse } from './timeline-v1';
+import {
+  parseTimelineTweetsV2,
+  TimelineArticle,
+  TimelineV2,
+} from './timeline-v2';
+import { getTrends } from './trends';
+import {
+  createCreateLongTweetRequest,
+  createCreateNoteTweetRequest,
+  createCreateTweetRequest,
+  createQuoteTweetRequest,
+  fetchListTweets,
+  getAllRetweeters,
+  getArticle,
+  getLatestTweet,
+  getTweet,
+  getTweetAnonymous,
+  getTweets,
+  getTweetsAndReplies,
+  getTweetsAndRepliesByUserId,
+  getTweetsByUserId,
+  getTweetsWhere,
+  getTweetWhere,
+  getTweetWithReplies,
+  likeTweet,
+  retweet,
+  Retweeter,
+  Tweet,
+  TweetQuery,
+} from './tweets';
 import {
   AudioSpace,
   Community,
@@ -82,12 +88,6 @@ import {
   LoginTwitterTokenResponse,
   Subtopic,
 } from './types/spaces';
-import {
-  createGrokConversation,
-  grokChat,
-  GrokChatOptions,
-  GrokChatResponse,
-} from './grok';
 
 const twUrl = 'https://twitter.com';
 const UserTweetsUrl =
@@ -1008,5 +1008,31 @@ export class Scraper {
     }
 
     return allQuotes;
+  }
+
+  public async getQuotedTweets(
+    quotedTweetId: string,
+    cursor?: string,
+  ) {
+
+      const page = await fetchQuotedTweetsPage(
+        quotedTweetId,
+        20,
+        this.auth,
+        cursor,
+      );
+
+      // If there's no new tweets, stop
+      if (!page.tweets || page.tweets.length === 0) {
+        return {
+          next: undefined,
+          tweets: [],
+        };
+      }
+
+      return {
+        next: page.next,
+        tweets: page.tweets,
+      }
   }
 }
