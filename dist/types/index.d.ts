@@ -49,6 +49,102 @@ interface Profile {
     canDm?: boolean;
 }
 
+interface GrokMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
+interface GrokChatOptions {
+    messages: GrokMessage[];
+    conversationId?: string;
+    returnSearchResults?: boolean;
+    returnCitations?: boolean;
+}
+interface GrokRateLimit {
+    isRateLimited: boolean;
+    message: string;
+    upsellInfo?: {
+        usageLimit: string;
+        quotaDuration: string;
+        title: string;
+        message: string;
+    };
+}
+interface GrokChatResponse {
+    conversationId: string;
+    message: string;
+    messages: GrokMessage[];
+    webResults?: any[];
+    metadata?: any;
+    rateLimit?: GrokRateLimit;
+}
+
+interface DirectMessage {
+    id: string;
+    text: string;
+    senderId: string;
+    recipientId: string;
+    createdAt: string;
+    mediaUrls?: string[];
+    senderScreenName?: string;
+    recipientScreenName?: string;
+}
+interface DirectMessageConversation {
+    conversationId: string;
+    messages: DirectMessage[];
+    participants: {
+        id: string;
+        screenName: string;
+    }[];
+}
+interface DirectMessagesResponse {
+    conversations: DirectMessageConversation[];
+    users: TwitterUser[];
+    cursor?: string;
+    lastSeenEventId?: string;
+    trustedLastSeenEventId?: string;
+    untrustedLastSeenEventId?: string;
+    inboxTimelines?: {
+        trusted?: {
+            status: string;
+            minEntryId?: string;
+        };
+        untrusted?: {
+            status: string;
+            minEntryId?: string;
+        };
+    };
+    userId: string;
+}
+interface TwitterUser {
+    id: string;
+    screenName: string;
+    name: string;
+    profileImageUrl: string;
+    description?: string;
+    verified?: boolean;
+    protected?: boolean;
+    followersCount?: number;
+    friendsCount?: number;
+}
+interface SendDirectMessageResponse {
+    entries: {
+        message: {
+            id: string;
+            time: string;
+            affects_sort: boolean;
+            conversation_id: string;
+            message_data: {
+                id: string;
+                time: string;
+                recipient_id: string;
+                sender_id: string;
+                text: string;
+            };
+        };
+    }[];
+    users: Record<string, TwitterUser>;
+}
+
 interface TimelineArticle {
     id: string;
     articleId: string;
@@ -162,73 +258,6 @@ declare enum SearchMode {
     Photos = 2,
     Videos = 3,
     Users = 4
-}
-
-interface DirectMessage {
-    id: string;
-    text: string;
-    senderId: string;
-    recipientId: string;
-    createdAt: string;
-    mediaUrls?: string[];
-    senderScreenName?: string;
-    recipientScreenName?: string;
-}
-interface DirectMessageConversation {
-    conversationId: string;
-    messages: DirectMessage[];
-    participants: {
-        id: string;
-        screenName: string;
-    }[];
-}
-interface DirectMessagesResponse {
-    conversations: DirectMessageConversation[];
-    users: TwitterUser[];
-    cursor?: string;
-    lastSeenEventId?: string;
-    trustedLastSeenEventId?: string;
-    untrustedLastSeenEventId?: string;
-    inboxTimelines?: {
-        trusted?: {
-            status: string;
-            minEntryId?: string;
-        };
-        untrusted?: {
-            status: string;
-            minEntryId?: string;
-        };
-    };
-    userId: string;
-}
-interface TwitterUser {
-    id: string;
-    screenName: string;
-    name: string;
-    profileImageUrl: string;
-    description?: string;
-    verified?: boolean;
-    protected?: boolean;
-    followersCount?: number;
-    friendsCount?: number;
-}
-interface SendDirectMessageResponse {
-    entries: {
-        message: {
-            id: string;
-            time: string;
-            affects_sort: boolean;
-            conversation_id: string;
-            message_data: {
-                id: string;
-                time: string;
-                recipient_id: string;
-                sender_id: string;
-                text: string;
-            };
-        };
-    }[];
-    users: Record<string, TwitterUser>;
 }
 
 /**
@@ -418,35 +447,6 @@ interface LoginTwitterTokenResponse {
         n_following: number;
     };
     type: string;
-}
-
-interface GrokMessage {
-    role: 'user' | 'assistant';
-    content: string;
-}
-interface GrokChatOptions {
-    messages: GrokMessage[];
-    conversationId?: string;
-    returnSearchResults?: boolean;
-    returnCitations?: boolean;
-}
-interface GrokRateLimit {
-    isRateLimited: boolean;
-    message: string;
-    upsellInfo?: {
-        usageLimit: string;
-        quotaDuration: string;
-        title: string;
-        message: string;
-    };
-}
-interface GrokChatResponse {
-    conversationId: string;
-    message: string;
-    messages: GrokMessage[];
-    webResults?: any[];
-    metadata?: any;
-    rateLimit?: GrokRateLimit;
 }
 
 interface ScraperOptions {
@@ -885,6 +885,10 @@ declare class Scraper {
      * @returns An array of all Tweet objects referencing the given tweet.
      */
     getAllQuotedTweets(quotedTweetId: string, maxTweetsPerPage?: number): Promise<Tweet[]>;
+    getQuotedTweets(quotedTweetId: string, cursor?: string): Promise<{
+        next: string | undefined;
+        tweets: Tweet[];
+    }>;
 }
 
 export { type Profile, type QueryProfilesResponse, type QueryTweetsResponse, Scraper, SearchMode, type Tweet };
