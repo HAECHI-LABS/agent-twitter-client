@@ -241,6 +241,14 @@ export async function getScreenNameByUserId(
   const url = `https://twitter.com/i/api/graphql/xf3jd90KKBCUxdlI_tNHZw/UserByRestId?${params.toString()}`;
   debugLog('getScreenNameByUserId', url);
   const res = await requestApi<UserRaw>(url, auth);
+  debugLog('getScreenNameByUserId response', res, {
+    user:
+      'value' in res
+        ? res.value?.data?.user?.result
+        : 'error' in res
+        ? res.err
+        : 'unknown',
+  });
 
   if (!res.success) {
     return res;
@@ -289,7 +297,9 @@ export async function getUserIdByScreenName(
     return { success: true, value: cached };
   }
 
+  debugLog('getUserIdByScreenName', screenName);
   const profileRes = await getProfile(screenName, auth);
+  debugLog('getUserIdByScreenName profileRes', profileRes);
   if (!profileRes.success) {
     return profileRes;
   }

@@ -3,6 +3,9 @@ import { ApiError } from './errors';
 import { Platform, PlatformExtensions } from './platform';
 import { updateCookieJar } from './requests';
 import { Headers } from 'headers-polyfill';
+import debug from 'debug';
+
+const debugLog = debug('agent-twitter-client:api');
 
 // For some reason using Parameters<typeof fetch> reduces the request transform function to
 // `(url: string) => string` in tests.
@@ -90,6 +93,7 @@ export async function requestApi<T>(
       if (xRateLimitRemaining == '0' && xRateLimitReset) {
         const currentTime = new Date().valueOf() / 1000;
         const timeDeltaMs = 1000 * (parseInt(xRateLimitReset) - currentTime);
+        debugLog('rate limit reset', timeDeltaMs);
 
         // I have seen this block for 800s (~13 *minutes*)
         await new Promise((resolve) => setTimeout(resolve, timeDeltaMs));
@@ -108,7 +112,8 @@ export async function requestApi<T>(
   const transferEncoding = res.headers.get('transfer-encoding');
   if (transferEncoding === 'chunked') {
     // Handle streaming response, if a reader is present
-    const reader = typeof res.body?.getReader === 'function' ? res.body.getReader() : null;
+    const reader =
+      typeof res.body?.getReader === 'function' ? res.body.getReader() : null;
     if (!reader) {
       try {
         const text = await res.text();
