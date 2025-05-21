@@ -21,6 +21,7 @@ import {
 } from './messages';
 import {
   getProfile,
+  getProfileByUserId,
   getScreenNameByUserId,
   getUserIdByScreenName,
   Profile,
@@ -163,6 +164,11 @@ export class Scraper {
    */
   public async getScreenNameByUserId(userId: string): Promise<string> {
     const response = await getScreenNameByUserId(userId, this.auth);
+    return this.handleResponse(response);
+  }
+
+  public async getProfileByUserId(userId: string): Promise<Profile> {
+    const response = await getProfileByUserId(userId, this.auth);
     return this.handleResponse(response);
   }
 
@@ -1010,29 +1016,25 @@ export class Scraper {
     return allQuotes;
   }
 
-  public async getQuotedTweets(
-    quotedTweetId: string,
-    cursor?: string,
-  ) {
+  public async getQuotedTweets(quotedTweetId: string, cursor?: string) {
+    const page = await fetchQuotedTweetsPage(
+      quotedTweetId,
+      20,
+      this.auth,
+      cursor,
+    );
 
-      const page = await fetchQuotedTweetsPage(
-        quotedTweetId,
-        20,
-        this.auth,
-        cursor,
-      );
-
-      // If there's no new tweets, stop
-      if (!page.tweets || page.tweets.length === 0) {
-        return {
-          next: undefined,
-          tweets: [],
-        };
-      }
-
+    // If there's no new tweets, stop
+    if (!page.tweets || page.tweets.length === 0) {
       return {
-        next: page.next,
-        tweets: page.tweets,
-      }
+        next: undefined,
+        tweets: [],
+      };
+    }
+
+    return {
+      next: page.next,
+      tweets: page.tweets,
+    };
   }
 }
