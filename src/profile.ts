@@ -159,10 +159,19 @@ export async function getProfile(
     stringify({ withAuxiliaryUserLabels: false }) ?? '',
   );
 
+  debugLog('getProfile');
   const res = await requestApi<UserRaw>(
     `https://twitter.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName?${params.toString()}`,
     auth,
   );
+  debugLog('getProfile res', res, {
+    user:
+      'value' in res
+        ? res.value?.data?.user?.result
+        : 'error' in res
+        ? res.err
+        : 'unknown',
+  });
   if (!res.success) {
     return res;
   }

@@ -63,6 +63,9 @@ export async function requestApi<T>(
   let res: Response;
   do {
     try {
+      debugLog('requestApi auth.fetch', url, {
+        method,
+      });
       res = await auth.fetch(url, {
         method,
         headers,
@@ -119,12 +122,18 @@ export async function requestApi<T>(
         const text = await res.text();
         try {
           const value = JSON.parse(text);
+          debugLog('streaming response', value);
           return { success: true, value };
         } catch (e) {
+          debugLog('streaming response error', {
+            e,
+            text,
+          });
           // Return if just a normal string
           return { success: true, value: { text } as any };
         }
       } catch (e) {
+        debugLog('streaming response error', e);
         return {
           success: false,
           err: new Error('No readable stream available and cant parse'),
@@ -149,10 +158,12 @@ export async function requestApi<T>(
     try {
       // console.log('attempting to parse chunks', chunks);
       const value = JSON.parse(chunks);
+      debugLog('streaming response parsed', value);
       return { success: true, value };
     } catch (e) {
       // console.log('parsing chunks failed, sending as raw text');
       // If we can't parse as JSON, return the raw text
+      debugLog('streaming response parse error', e);
       return { success: true, value: { text: chunks } as any };
     }
   }
@@ -164,9 +175,11 @@ export async function requestApi<T>(
     if (res.headers.get('x-rate-limit-incoming') == '0') {
       auth.deleteToken();
     }
+    debugLog('non-streaming response parsed', value);
     return { success: true, value };
   }
 
+  debugLog('non-streaming response', res);
   return { success: true, value: {} as T };
 }
 
