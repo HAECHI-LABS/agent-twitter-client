@@ -3,6 +3,7 @@
 var toughCookie = require('tough-cookie');
 var setCookie = require('set-cookie-parser');
 var headersPolyfill = require('headers-polyfill');
+var debug = require('debug');
 var typebox = require('@sinclair/typebox');
 var value = require('@sinclair/typebox/value');
 var OTPAuth = require('otpauth');
@@ -83,6 +84,7 @@ async function updateCookieJar(cookieJar, headers) {
   }
 }
 
+const debugLog$1 = debug("agent-twitter-client:api");
 const bearerToken = "AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF";
 async function requestApi(url, auth, method = "GET", platform = new Platform(), body) {
   const headers = new headersPolyfill.Headers();
@@ -113,6 +115,7 @@ async function requestApi(url, auth, method = "GET", platform = new Platform(), 
       if (xRateLimitRemaining == "0" && xRateLimitReset) {
         const currentTime = (/* @__PURE__ */ new Date()).valueOf() / 1e3;
         const timeDeltaMs = 1e3 * (parseInt(xRateLimitReset) - currentTime);
+        debugLog$1("rate limit reset", timeDeltaMs);
         await new Promise((resolve) => setTimeout(resolve, timeDeltaMs));
       }
     }
@@ -358,6 +361,7 @@ class TwitterGuestAuth {
   }
 }
 
+const debugLog = debug("agent-twitter-client:profile");
 function getAvatarOriginalSizeUrl(avatarUrl) {
   return avatarUrl ? avatarUrl.replace("_normal", "") : void 0;
 }
@@ -418,7 +422,10 @@ async function getProfile(username, auth) {
       responsive_web_graphql_timeline_navigation_enabled: true
     }) ?? ""
   );
-  params.set("fieldToggles", stringify({ withAuxiliaryUserLabels: false }) ?? "");
+  params.set(
+    "fieldToggles",
+    stringify({ withAuxiliaryUserLabels: false }) ?? ""
+  );
   const res = await requestApi(
     `https://twitter.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName?${params.toString()}`,
     auth
@@ -485,10 +492,12 @@ async function getScreenNameByUserId(userId, auth) {
       responsive_web_graphql_timeline_navigation_enabled: true
     }) ?? ""
   );
-  const res = await requestApi(
-    `https://twitter.com/i/api/graphql/xf3jd90KKBCUxdlI_tNHZw/UserByRestId?${params.toString()}`,
-    auth
-  );
+  const url = `https://twitter.com/i/api/graphql/xf3jd90KKBCUxdlI_tNHZw/UserByRestId?${params.toString()}`;
+  debugLog("getScreenNameByUserId", url);
+  const res = await requestApi(url, auth);
+  debugLog("getScreenNameByUserId response", res, {
+    user: "value" in res ? res.value?.data?.user?.result : "error" in res ? res.err : "unknown"
+  });
   if (!res.success) {
     return res;
   }
@@ -526,7 +535,9 @@ async function getUserIdByScreenName(screenName, auth) {
   if (cached != null) {
     return { success: true, value: cached };
   }
+  debugLog("getUserIdByScreenName", screenName);
   const profileRes = await getProfile(screenName, auth);
+  debugLog("getUserIdByScreenName profileRes", profileRes);
   if (!profileRes.success) {
     return profileRes;
   }
