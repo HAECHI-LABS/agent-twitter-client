@@ -93,6 +93,9 @@ async function requestApi(url, auth, method = "GET", platform = new Platform(), 
   let res;
   do {
     try {
+      debugLog$1("requestApi auth.fetch", url, {
+        method
+      });
       res = await auth.fetch(url, {
         method,
         headers,
@@ -134,11 +137,17 @@ async function requestApi(url, auth, method = "GET", platform = new Platform(), 
         const text = await res.text();
         try {
           const value = JSON.parse(text);
+          debugLog$1("streaming response", value);
           return { success: true, value };
         } catch (e) {
+          debugLog$1("streaming response error", {
+            e,
+            text
+          });
           return { success: true, value: { text } };
         }
       } catch (e) {
+        debugLog$1("streaming response error", e);
         return {
           success: false,
           err: new Error("No readable stream available and cant parse")
@@ -153,8 +162,10 @@ async function requestApi(url, auth, method = "GET", platform = new Platform(), 
     }
     try {
       const value = JSON.parse(chunks);
+      debugLog$1("streaming response parsed", value);
       return { success: true, value };
     } catch (e) {
+      debugLog$1("streaming response parse error", e);
       return { success: true, value: { text: chunks } };
     }
   }
@@ -164,8 +175,10 @@ async function requestApi(url, auth, method = "GET", platform = new Platform(), 
     if (res.headers.get("x-rate-limit-incoming") == "0") {
       auth.deleteToken();
     }
+    debugLog$1("non-streaming response parsed", value);
     return { success: true, value };
   }
+  debugLog$1("non-streaming response", res);
   return { success: true, value: {} };
 }
 function addApiFeatures(o) {
@@ -426,10 +439,14 @@ async function getProfile(username, auth) {
     "fieldToggles",
     stringify({ withAuxiliaryUserLabels: false }) ?? ""
   );
+  debugLog("getProfile");
   const res = await requestApi(
     `https://twitter.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName?${params.toString()}`,
     auth
   );
+  debugLog("getProfile res", res, {
+    user: "value" in res ? res.value?.data?.user?.result : "error" in res ? res.err : "unknown"
+  });
   if (!res.success) {
     return res;
   }
