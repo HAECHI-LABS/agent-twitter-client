@@ -2,6 +2,9 @@ import stringify from 'json-stable-stringify';
 import { requestApi, RequestApiResult } from './api';
 import { TwitterAuth } from './auth';
 import { TwitterApiErrorRaw } from './errors';
+import debug from 'debug';
+
+const debugLog = debug('agent-twitter-client:profile');
 
 export interface LegacyUserRaw {
   created_at?: string;
@@ -151,7 +154,10 @@ export async function getProfile(
     }) ?? '',
   );
 
-  params.set('fieldToggles', stringify({ withAuxiliaryUserLabels: false }) ?? '');
+  params.set(
+    'fieldToggles',
+    stringify({ withAuxiliaryUserLabels: false }) ?? '',
+  );
 
   const res = await requestApi<UserRaw>(
     `https://twitter.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName?${params.toString()}`,
@@ -232,10 +238,9 @@ export async function getScreenNameByUserId(
     }) ?? '',
   );
 
-  const res = await requestApi<UserRaw>(
-    `https://twitter.com/i/api/graphql/xf3jd90KKBCUxdlI_tNHZw/UserByRestId?${params.toString()}`,
-    auth,
-  );
+  const url = `https://twitter.com/i/api/graphql/xf3jd90KKBCUxdlI_tNHZw/UserByRestId?${params.toString()}`;
+  debugLog('getScreenNameByUserId', url);
+  const res = await requestApi<UserRaw>(url, auth);
 
   if (!res.success) {
     return res;
