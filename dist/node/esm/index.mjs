@@ -526,6 +526,68 @@ async function getScreenNameByUserId(userId, auth) {
     value: legacy.screen_name
   };
 }
+async function getProfileByUserId(userId, auth) {
+  const params = new URLSearchParams();
+  params.set(
+    "variables",
+    stringify({
+      userId,
+      withSafetyModeUserFields: true
+    }) ?? ""
+  );
+  params.set(
+    "features",
+    stringify({
+      hidden_profile_subscriptions_enabled: true,
+      rweb_tipjar_consumption_enabled: true,
+      responsive_web_graphql_exclude_directive_enabled: true,
+      verified_phone_label_enabled: false,
+      highlights_tweets_tab_ui_enabled: true,
+      responsive_web_twitter_article_notes_tab_enabled: true,
+      subscriptions_feature_can_gift_premium: false,
+      creator_subscriptions_tweet_preview_api_enabled: true,
+      responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
+      responsive_web_graphql_timeline_navigation_enabled: true
+    }) ?? ""
+  );
+  const url = `https://twitter.com/i/api/graphql/xf3jd90KKBCUxdlI_tNHZw/UserByRestId?${params.toString()}`;
+  debugLog("getProfileByUserId", url);
+  const res = await requestApi(url, auth);
+  debugLog("getProfileByUserId response", res, {
+    user: "value" in res ? res.value?.data?.user?.result : "error" in res ? res.err : "unknown"
+  });
+  if (!res.success) {
+    return res;
+  }
+  const { value } = res;
+  const { errors } = value;
+  if (errors != null && errors.length > 0) {
+    return {
+      success: false,
+      err: new Error(errors[0].message)
+    };
+  }
+  if (!value.data || !value.data.user || !value.data.user.result) {
+    return {
+      success: false,
+      err: new Error("User not found.")
+    };
+  }
+  const { result: user } = value.data.user;
+  const { legacy } = user;
+  if (legacy.screen_name == null || legacy.screen_name.length === 0) {
+    return {
+      success: false,
+      err: new Error(
+        `Either user with ID ${userId} does not exist or is private.`
+      )
+    };
+  }
+  return {
+    success: true,
+    value: parseProfile(user.legacy, user.is_blue_verified)
+  };
+}
 async function getUserIdByScreenName(screenName, auth) {
   const cached = idCache.get(screenName);
   if (cached != null) {
@@ -3395,6 +3457,10 @@ class Scraper {
    */
   async getScreenNameByUserId(userId) {
     const response = await getScreenNameByUserId(userId, this.auth);
+    return this.handleResponse(response);
+  }
+  async getProfileByUserId(userId) {
+    const response = await getProfileByUserId(userId, this.auth);
     return this.handleResponse(response);
   }
   /**

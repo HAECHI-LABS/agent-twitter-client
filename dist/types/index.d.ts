@@ -494,6 +494,7 @@ declare class Scraper {
      * @returns The screen name of the corresponding account.
      */
     getScreenNameByUserId(userId: string): Promise<string>;
+    getProfileByUserId(userId: string): Promise<Profile>;
     /**
      * Fetches tweets from Twitter.
      * @param query The search query. Any Twitter-compatible query format can be used.
