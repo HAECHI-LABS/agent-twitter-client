@@ -693,14 +693,24 @@ export class Scraper {
   public async getCookies(): Promise<Cookie[]> {
     const cookiejar = this.authTrends.cookieJar();
 
+    // 원래는 twitter.com 만 사용했었음.
+    // 25/05/26 에서 login이 x.com 도메인을 사용하게 만들어서 섞임.
+    const expectedDomain =
+      typeof document !== 'undefined' ? document.location.toString() : twUrl;
     const cookies = await Promise.all([
-      cookiejar.getCookies(
-        typeof document !== 'undefined' ? document.location.toString() : twUrl,
-      ),
+      cookiejar.getCookies(expectedDomain),
       cookiejar.getCookies('https://twitter.com'),
       cookiejar.getCookies('https://x.com'),
     ]);
-    return cookies.flat();
+
+    const allCookies = cookies.flat();
+
+    // cookie 의 domain 을 모두 null 로 만들어서 모든 도메인에서 사용할 수 있게 함.
+    for (const cookie of allCookies) {
+      cookie.domain = null;
+    }
+
+    return allCookies;
   }
 
   /**
