@@ -9,7 +9,7 @@ const debugLog = debug('agent-twitter-client:api');
 
 // For some reason using Parameters<typeof fetch> reduces the request transform function to
 // `(url: string) => string` in tests.
-type FetchParameters = [input: RequestInfo | URL, init?: RequestInit];
+export type FetchParameters = [input: RequestInfo | URL, init?: RequestInit];
 
 export interface FetchTransformOptions {
   /**
