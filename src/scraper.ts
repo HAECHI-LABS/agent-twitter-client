@@ -691,11 +691,16 @@ export class Scraper {
    * @returns All cookies for the current session.
    */
   public async getCookies(): Promise<Cookie[]> {
-    return await this.authTrends
-      .cookieJar()
-      .getCookies(
+    const cookiejar = this.authTrends.cookieJar();
+
+    const cookies = await Promise.all([
+      cookiejar.getCookies(
         typeof document !== 'undefined' ? document.location.toString() : twUrl,
-      );
+      ),
+      cookiejar.getCookies('https://twitter.com'),
+      cookiejar.getCookies('https://x.com'),
+    ]);
+    return cookies.flat();
   }
 
   /**
