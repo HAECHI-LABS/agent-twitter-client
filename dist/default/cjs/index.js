@@ -3953,9 +3953,15 @@ class Scraper {
    * @returns All cookies for the current session.
    */
   async getCookies() {
-    return await this.authTrends.cookieJar().getCookies(
-      typeof document !== "undefined" ? document.location.toString() : twUrl
-    );
+    const cookiejar = this.authTrends.cookieJar();
+    const cookies = await Promise.all([
+      cookiejar.getCookies(
+        typeof document !== "undefined" ? document.location.toString() : twUrl
+      ),
+      cookiejar.getCookies("https://twitter.com"),
+      cookiejar.getCookies("https://x.com")
+    ]);
+    return cookies.flat();
   }
   /**
    * Set cookies for the current session.
