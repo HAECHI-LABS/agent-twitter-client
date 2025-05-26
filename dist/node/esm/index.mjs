@@ -63,7 +63,7 @@ async function updateCookieJar(cookieJar, headers) {
   }
 }
 
-const debugLog$1 = debug("agent-twitter-client:api");
+const debugLog$2 = debug("agent-twitter-client:api");
 const bearerToken = "AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF";
 async function requestApi(url, auth, method = "GET", platform = new Platform(), body) {
   const headers = new Headers$1();
@@ -72,7 +72,7 @@ async function requestApi(url, auth, method = "GET", platform = new Platform(), 
   let res;
   do {
     try {
-      debugLog$1("requestApi auth.fetch", url, {
+      debugLog$2("requestApi auth.fetch", url, {
         method
       });
       res = await auth.fetch(url, {
@@ -97,7 +97,7 @@ async function requestApi(url, auth, method = "GET", platform = new Platform(), 
       if (xRateLimitRemaining == "0" && xRateLimitReset) {
         const currentTime = (/* @__PURE__ */ new Date()).valueOf() / 1e3;
         const timeDeltaMs = 1e3 * (parseInt(xRateLimitReset) - currentTime);
-        debugLog$1("rate limit reset", timeDeltaMs);
+        debugLog$2("rate limit reset", timeDeltaMs);
         await new Promise((resolve) => setTimeout(resolve, timeDeltaMs));
       }
     }
@@ -116,17 +116,17 @@ async function requestApi(url, auth, method = "GET", platform = new Platform(), 
         const text = await res.text();
         try {
           const value = JSON.parse(text);
-          debugLog$1("streaming response", value);
+          debugLog$2("streaming response", value);
           return { success: true, value };
         } catch (e) {
-          debugLog$1("streaming response error", {
+          debugLog$2("streaming response error", {
             e,
             text
           });
           return { success: true, value: { text } };
         }
       } catch (e) {
-        debugLog$1("streaming response error", e);
+        debugLog$2("streaming response error", e);
         return {
           success: false,
           err: new Error("No readable stream available and cant parse")
@@ -141,10 +141,10 @@ async function requestApi(url, auth, method = "GET", platform = new Platform(), 
     }
     try {
       const value = JSON.parse(chunks);
-      debugLog$1("streaming response parsed", value);
+      debugLog$2("streaming response parsed", value);
       return { success: true, value };
     } catch (e) {
-      debugLog$1("streaming response parse error", e);
+      debugLog$2("streaming response parse error", e);
       return { success: true, value: { text: chunks } };
     }
   }
@@ -154,10 +154,10 @@ async function requestApi(url, auth, method = "GET", platform = new Platform(), 
     if (res.headers.get("x-rate-limit-incoming") == "0") {
       auth.deleteToken();
     }
-    debugLog$1("non-streaming response parsed", value);
+    debugLog$2("non-streaming response parsed", value);
     return { success: true, value };
   }
-  debugLog$1("non-streaming response", res);
+  debugLog$2("non-streaming response", res);
   return { success: true, value: {} };
 }
 function addApiFeatures(o) {
@@ -295,11 +295,17 @@ class TwitterGuestAuth {
     }
     headers.set("cookie", await this.getCookieString());
   }
-  getCookies() {
-    return this.jar.getCookies(this.getCookieJarUrl());
+  async getCookies() {
+    const cookies = await Promise.all([
+      this.jar.getCookies(this.getCookieJarUrl()),
+      this.jar.getCookies("https://twitter.com"),
+      this.jar.getCookies("https://x.com")
+    ]);
+    return cookies.flat();
   }
-  getCookieString() {
-    return this.jar.getCookieString(this.getCookieJarUrl());
+  async getCookieString() {
+    const cookies = await this.getCookies();
+    return cookies.map((cookie) => `${cookie.key}=${cookie.value}`).join("; ");
   }
   async removeCookie(key) {
     const store = this.jar.store;
@@ -319,7 +325,7 @@ class TwitterGuestAuth {
    * Updates the authentication state with a new guest token from the Twitter API.
    */
   async updateGuestToken() {
-    const guestActivateUrl = "https://api.twitter.com/1.1/guest/activate.json";
+    const guestActivateUrl = "https://api.x.com/1.1/guest/activate.json";
     const headers = new Headers$1({
       Authorization: `Bearer ${this.bearerToken}`,
       Cookie: await this.getCookieString()
@@ -353,7 +359,7 @@ class TwitterGuestAuth {
   }
 }
 
-const debugLog = debug("agent-twitter-client:profile");
+const debugLog$1 = debug("agent-twitter-client:profile");
 function getAvatarOriginalSizeUrl(avatarUrl) {
   return avatarUrl ? avatarUrl.replace("_normal", "") : void 0;
 }
@@ -418,12 +424,12 @@ async function getProfile(username, auth) {
     "fieldToggles",
     stringify({ withAuxiliaryUserLabels: false }) ?? ""
   );
-  debugLog("getProfile");
+  debugLog$1("getProfile");
   const res = await requestApi(
     `https://twitter.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName?${params.toString()}`,
     auth
   );
-  debugLog("getProfile res", res, {
+  debugLog$1("getProfile res", res, {
     user: "value" in res ? res.value?.data?.user?.result : "error" in res ? res.err : "unknown"
   });
   if (!res.success) {
@@ -489,9 +495,9 @@ async function getScreenNameByUserId(userId, auth) {
     }) ?? ""
   );
   const url = `https://twitter.com/i/api/graphql/xf3jd90KKBCUxdlI_tNHZw/UserByRestId?${params.toString()}`;
-  debugLog("getScreenNameByUserId", url);
+  debugLog$1("getScreenNameByUserId", url);
   const res = await requestApi(url, auth);
-  debugLog("getScreenNameByUserId response", res, {
+  debugLog$1("getScreenNameByUserId response", res, {
     user: "value" in res ? res.value?.data?.user?.result : "error" in res ? res.err : "unknown"
   });
   if (!res.success) {
@@ -551,9 +557,9 @@ async function getProfileByUserId(userId, auth) {
     }) ?? ""
   );
   const url = `https://twitter.com/i/api/graphql/xf3jd90KKBCUxdlI_tNHZw/UserByRestId?${params.toString()}`;
-  debugLog("getProfileByUserId", url);
+  debugLog$1("getProfileByUserId", url);
   const res = await requestApi(url, auth);
-  debugLog("getProfileByUserId response", res, {
+  debugLog$1("getProfileByUserId response", res, {
     user: "value" in res ? res.value?.data?.user?.result : "error" in res ? res.err : "unknown"
   });
   if (!res.success) {
@@ -593,9 +599,9 @@ async function getUserIdByScreenName(screenName, auth) {
   if (cached != null) {
     return { success: true, value: cached };
   }
-  debugLog("getUserIdByScreenName", screenName);
+  debugLog$1("getUserIdByScreenName", screenName);
   const profileRes = await getProfile(screenName, auth);
-  debugLog("getUserIdByScreenName profileRes", profileRes);
+  debugLog$1("getUserIdByScreenName profileRes", profileRes);
   if (!profileRes.success) {
     return profileRes;
   }
@@ -613,6 +619,7 @@ async function getUserIdByScreenName(screenName, auth) {
   };
 }
 
+const debugLog = debug("agent-twitter-client:auth-user");
 const TwitterUserAuthSubtask = Type.Object({
   subtask_id: Type.String(),
   enter_text: Type.Optional(Type.Object({}))
@@ -623,7 +630,7 @@ class TwitterUserAuth extends TwitterGuestAuth {
   }
   async isLoggedIn() {
     const res = await requestApi(
-      "https://api.twitter.com/1.1/account/verify_credentials.json",
+      "https://x.com/1.1/account/verify_credentials.json",
       this
     );
     if (!res.success) {
@@ -685,7 +692,7 @@ class TwitterUserAuth extends TwitterGuestAuth {
       return;
     }
     await requestApi(
-      "https://api.twitter.com/1.1/account/logout.json",
+      "https://api.x.com/1.1/account/logout.json",
       this,
       "POST"
     );
@@ -717,15 +724,59 @@ class TwitterUserAuth extends TwitterGuestAuth {
     this.removeCookie("external_referer=");
     this.removeCookie("ct0=");
     this.removeCookie("aa_u=");
+    this.removeCookie("__cf_bm=");
     return await this.executeFlowTask({
       flow_name: "login",
       input_flow_data: {
         flow_context: {
           debug_overrides: {},
           start_location: {
-            location: "splash_screen"
+            location: "unknown"
           }
         }
+      },
+      subtask_versions: {
+        action_list: 2,
+        alert_dialog: 1,
+        app_download_cta: 1,
+        check_logged_in_account: 1,
+        choice_selection: 3,
+        contacts_live_sync_permission_prompt: 0,
+        cta: 7,
+        email_verification: 2,
+        end_flow: 1,
+        enter_date: 1,
+        enter_email: 2,
+        enter_password: 5,
+        enter_phone: 2,
+        enter_recaptcha: 1,
+        enter_text: 5,
+        enter_username: 2,
+        generic_urt: 3,
+        in_app_notification: 1,
+        interest_picker: 3,
+        js_instrumentation: 1,
+        menu_dialog: 1,
+        notifications_permission_prompt: 2,
+        open_account: 2,
+        open_home_timeline: 1,
+        open_link: 1,
+        phone_verification: 4,
+        privacy_options: 1,
+        security_key: 3,
+        select_avatar: 4,
+        select_banner: 2,
+        settings_list: 7,
+        show_code: 1,
+        sign_up: 2,
+        sign_up_review: 4,
+        tweet_selection_urt: 1,
+        update_users: 1,
+        upload_media: 1,
+        user_recommendations_list: 4,
+        user_recommendations_urt: 1,
+        wait_spinner: 3,
+        web_modal: 1
       }
     });
   }
@@ -850,7 +901,10 @@ class TwitterUserAuth extends TwitterGuestAuth {
     });
   }
   async executeFlowTask(data) {
-    const onboardingTaskUrl = "https://api.twitter.com/1.1/onboarding/task.json";
+    let onboardingTaskUrl = "https://api.x.com/1.1/onboarding/task.json";
+    if ("flow_name" in data) {
+      onboardingTaskUrl = `https://api.x.com/1.1/onboarding/task.json?flow_name=${data.flow_name}`;
+    }
     const token = this.guestToken;
     if (token == null) {
       throw new Error("Authentication token is null or undefined.");
@@ -866,13 +920,41 @@ class TwitterUserAuth extends TwitterGuestAuth {
       "x-twitter-client-language": "en"
     });
     await this.installCsrfToken(headers);
-    const res = await this.fetch(onboardingTaskUrl, {
-      credentials: "include",
-      method: "POST",
-      headers,
-      body: JSON.stringify(data)
-    });
-    await updateCookieJar(this.jar, res.headers);
+    let res;
+    do {
+      const fetchParameters = [
+        onboardingTaskUrl,
+        {
+          credentials: "include",
+          method: "POST",
+          headers,
+          body: JSON.stringify(data)
+        }
+      ];
+      try {
+        res = await this.fetch(...fetchParameters);
+      } catch (err) {
+        if (!(err instanceof Error)) {
+          throw err;
+        }
+        return {
+          status: "error",
+          err: new Error("Failed to perform request.")
+        };
+      }
+      await updateCookieJar(this.jar, res.headers);
+      if (res.status === 429) {
+        debugLog("Rate limit hit, waiting before retrying...");
+        const xRateLimitRemaining = res.headers.get("x-rate-limit-remaining");
+        const xRateLimitReset = res.headers.get("x-rate-limit-reset");
+        if (xRateLimitRemaining == "0" && xRateLimitReset) {
+          const currentTime = (/* @__PURE__ */ new Date()).valueOf() / 1e3;
+          const timeDeltaMs = 1e3 * (parseInt(xRateLimitReset) - currentTime);
+          debugLog("rate limit reset", timeDeltaMs);
+          await new Promise((resolve) => setTimeout(resolve, timeDeltaMs));
+        }
+      }
+    } while (res.status === 429);
     if (!res.ok) {
       return { status: "error", err: new Error(await res.text()) };
     }
