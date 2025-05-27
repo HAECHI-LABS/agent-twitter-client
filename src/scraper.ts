@@ -710,6 +710,10 @@ export class Scraper {
     for (const cookie of cookies) {
       debugLog('setCookie', cookie);
       await userAuth.cookieJar().setCookie(cookie, twUrl);
+      await userAuth.cookieJar().setCookie(cookie, 'https://x.com');
+      await userAuth
+        .cookieJar()
+        .setCookie(cookie, 'https://api.x.com/1.1/onboarding/task.json');
     }
 
     this.auth = userAuth;
