@@ -468,7 +468,6 @@ interface ScraperOptions {
 declare class Scraper {
     private readonly options?;
     private auth;
-    private authTrends;
     private token;
     /**
      * Creates a new Scraper object.
@@ -586,11 +585,6 @@ declare class Scraper {
         next?: string;
     }>;
     getUserTweetsIterator(userId: string, maxTweets?: number): AsyncGenerator<Tweet, void>;
-    /**
-     * Fetches the current trends from Twitter.
-     * @returns The current list of trends.
-     */
-    getTrends(): Promise<string[]>;
     /**
      * Fetches tweets from a Twitter user.
      * @param user The user whose tweets should be returned.
