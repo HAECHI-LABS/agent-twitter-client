@@ -136,7 +136,7 @@ async function requestApi(url, auth, method = "GET", platform = new Platform(), 
   } while (res.status === 429);
   if (!res.ok) {
     const err = await ApiError.fromResponse(res);
-    console.log("res.ok is false", {
+    debugLog$4("res.ok is false", {
       err
     });
     return {
