@@ -106,7 +106,7 @@ export async function requestApi<T>(
 
   if (!res.ok) {
     const err = await ApiError.fromResponse(res);
-    console.log('res.ok is false', {
+    debugLog('res.ok is false', {
       err,
     });
     return {
