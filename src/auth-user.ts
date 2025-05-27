@@ -99,6 +99,7 @@ export class TwitterUserAuth extends TwitterGuestAuth {
 
     let next = await this.initLogin();
     while ('subtask' in next && next.subtask) {
+      debugLog('next', next);
       if (next.subtask.subtask_id === 'LoginJsInstrumentationSubtask') {
         next = await this.handleJsInstrumentationSubtask(next);
       } else if (next.subtask.subtask_id === 'LoginEnterUserIdentifierSSO') {
@@ -125,7 +126,8 @@ export class TwitterUserAuth extends TwitterGuestAuth {
       } else if (next.subtask.subtask_id === 'LoginAcid') {
         next = await this.handleAcid(next, email);
       } else if (next.subtask.subtask_id === 'LoginSuccessSubtask') {
-        next = await this.handleSuccessSubtask(next);
+        await this.handleSuccessSubtask(next);
+        break;
       } else {
         throw new Error(`Unknown subtask ${next.subtask.subtask_id}`);
       }
@@ -160,6 +162,10 @@ export class TwitterUserAuth extends TwitterGuestAuth {
   async installTo(headers: Headers): Promise<void> {
     headers.set('authorization', `Bearer ${this.bearerToken}`);
     headers.set('cookie', await this.getCookieString());
+    debugLog('installTo', {
+      headers,
+      cookie: await this.getCookieString(),
+    });
     await this.installCsrfToken(headers);
   }
 
@@ -184,9 +190,7 @@ export class TwitterUserAuth extends TwitterGuestAuth {
       input_flow_data: {
         flow_context: {
           debug_overrides: {},
-          start_location: {
-            location: 'unknown',
-          },
+          start_location: { location: 'home' },
         },
       },
       subtask_versions: {

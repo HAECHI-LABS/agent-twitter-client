@@ -16,6 +16,9 @@ import { getTweetTimeline } from './timeline-async';
 import { apiRequestFactory } from './api-data';
 import { ListTimeline, parseListTimelineTweets } from './timeline-list';
 import { updateCookieJar } from './requests';
+import debug from 'debug';
+
+const debugLog = debug('agent-twitter-client:tweets');
 
 export interface Mention {
   id: string;
@@ -194,15 +197,21 @@ export async function createCreateTweetRequest(
   mediaData?: { data: Buffer; mediaType: string }[],
   hideLinkPreview = false,
 ) {
-  const onboardingTaskUrl = 'https://api.twitter.com/1.1/onboarding/task.json';
+  const onboardingTaskUrl = 'https://api.x.com/1.1/onboarding/task.json';
 
   const cookies = await auth.cookieJar().getCookies(onboardingTaskUrl);
+  debugLog('cookies', cookies, {
+    length: cookies.length,
+  });
+  if (cookies.length === 0) {
+    throw new Error('No cookies found');
+  }
   const xCsrfToken = cookies.find((cookie) => cookie.key === 'ct0');
 
   //@ ts-expect-error - This is a private API.
   const headers = new Headers({
     authorization: `Bearer ${(auth as any).bearerToken}`,
-    cookie: await auth.cookieJar().getCookieString(onboardingTaskUrl),
+    cookie: cookies.map((cookie) => `${cookie.key}=${cookie.value}`).join('; '),
     'content-type': 'application/json',
     'User-Agent':
       'Mozilla/5.0 (Linux; Android 11; Nokia G20) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.88 Mobile Safari/537.36',
@@ -245,50 +254,43 @@ export async function createCreateTweetRequest(
   }
 
   const response = await fetch(
-    'https://twitter.com/i/api/graphql/a1p9RWpkYKBjWv_I3WzS-A/CreateTweet',
+    'https://x.com/i/api/graphql/eX0PqfsNKJZ1jAgyP_rHjQ/CreateTweet',
     {
       headers,
       body: JSON.stringify({
         variables,
         features: {
-          interactive_text_enabled: true,
-          longform_notetweets_inline_media_enabled: false,
-          responsive_web_text_conversations_enabled: false,
-          tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled:
-            false,
-          vibe_api_enabled: false,
-          rweb_lists_timeline_redesign_enabled: true,
-          responsive_web_graphql_exclude_directive_enabled: true,
-          verified_phone_label_enabled: false,
-          creator_subscriptions_tweet_preview_api_enabled: true,
-          responsive_web_graphql_timeline_navigation_enabled: true,
-          responsive_web_graphql_skip_user_profile_image_extensions_enabled:
-            false,
-          tweetypie_unmention_optimization_enabled: true,
+          premium_content_api_read_enabled: false,
+          communities_web_enable_tweet_community_results_fetch: true,
+          c9s_tweet_anatomy_moderator_badge_enabled: true,
+          responsive_web_grok_analyze_button_fetch_trends_enabled: false,
+          responsive_web_grok_analyze_post_followups_enabled: false,
+          responsive_web_jetfuel_frame: false,
+          responsive_web_grok_share_attachment_enabled: true,
           responsive_web_edit_tweet_api_enabled: true,
           graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
           view_counts_everywhere_api_enabled: true,
           longform_notetweets_consumption_enabled: true,
+          responsive_web_twitter_article_tweet_consumption_enabled: true,
           tweet_awards_web_tipping_enabled: false,
+          responsive_web_grok_show_grok_translated_post: false,
+          responsive_web_grok_analysis_button_from_backend: false,
+          creator_subscriptions_quote_tweet_preview_enabled: false,
+          longform_notetweets_rich_text_read_enabled: true,
+          longform_notetweets_inline_media_enabled: true,
+          profile_label_improvements_pcf_label_in_post_enabled: true,
+          rweb_tipjar_consumption_enabled: true,
+          verified_phone_label_enabled: false,
+          articles_preview_enabled: true,
+          responsive_web_graphql_skip_user_profile_image_extensions_enabled:
+            false,
           freedom_of_speech_not_reach_fetch_enabled: true,
           standardized_nudges_misinfo: true,
-          longform_notetweets_rich_text_read_enabled: true,
+          tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled:
+            true,
+          responsive_web_grok_image_annotation_enabled: true,
+          responsive_web_graphql_timeline_navigation_enabled: true,
           responsive_web_enhance_cards_enabled: false,
-          subscriptions_verification_info_enabled: true,
-          subscriptions_verification_info_reason_enabled: true,
-          subscriptions_verification_info_verified_since_enabled: true,
-          super_follow_badge_privacy_enabled: false,
-          super_follow_exclusive_tweet_notifications_enabled: false,
-          super_follow_tweet_api_enabled: false,
-          super_follow_user_api_enabled: false,
-          android_graphql_skip_api_media_color_palette: false,
-          creator_subscriptions_subscription_count_enabled: false,
-          blue_business_profile_image_shape_enabled: false,
-          unified_cards_ad_metadata_container_dynamic_card_content_query_enabled:
-            false,
-          rweb_video_timestamps_enabled: false,
-          c9s_tweet_anatomy_moderator_badge_enabled: false,
-          responsive_web_twitter_article_tweet_consumption_enabled: false,
         },
         fieldToggles: {},
       }),
@@ -300,6 +302,12 @@ export async function createCreateTweetRequest(
 
   // check for errors
   if (!response.ok) {
+    debugLog('response.ok is false', {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
     throw new Error(await response.text());
   }
 
@@ -312,7 +320,7 @@ export async function createCreateNoteTweetRequest(
   tweetId?: string,
   mediaData?: { data: Buffer; mediaType: string }[],
 ) {
-  const onboardingTaskUrl = 'https://api.twitter.com/1.1/onboarding/task.json';
+  const onboardingTaskUrl = 'https://api.x.com/1.1/onboarding/task.json';
 
   const cookies = await auth.cookieJar().getCookies(onboardingTaskUrl);
   const xCsrfToken = cookies.find((cookie) => cookie.key === 'ct0');
@@ -419,6 +427,12 @@ export async function createCreateNoteTweetRequest(
 
   // Check for errors and log the error response
   if (!response.ok) {
+    debugLog('response.ok is false', {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
     const errorText = await response.text();
     console.error('Error response:', errorText);
     throw new Error(`Failed to create long tweet: ${errorText}`);
@@ -778,6 +792,12 @@ async function uploadMedia(
     await updateCookieJar(auth.cookieJar(), response.headers);
 
     if (!response.ok) {
+      debugLog('response.ok is false', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
       throw new Error(await response.text());
     }
 
@@ -803,6 +823,12 @@ async function uploadMedia(
     });
 
     if (!initResponse.ok) {
+      debugLog('response.ok is false', {
+        ok: initResponse.ok,
+        status: initResponse.status,
+        statusText: initResponse.statusText,
+        headers: initResponse.headers,
+      });
       throw new Error(await initResponse.text());
     }
 
@@ -828,6 +854,12 @@ async function uploadMedia(
       });
 
       if (!appendResponse.ok) {
+        debugLog('response.ok is false', {
+          ok: appendResponse.ok,
+          status: appendResponse.status,
+          statusText: appendResponse.statusText,
+          headers: appendResponse.headers,
+        });
         throw new Error(await appendResponse.text());
       }
 
@@ -846,6 +878,12 @@ async function uploadMedia(
     });
 
     if (!finalizeResponse.ok) {
+      debugLog('response.ok is false', {
+        ok: finalizeResponse.ok,
+        status: finalizeResponse.status,
+        statusText: finalizeResponse.statusText,
+        headers: finalizeResponse.headers,
+      });
       throw new Error(await finalizeResponse.text());
     }
 
@@ -878,6 +916,12 @@ async function uploadMedia(
       );
 
       if (!statusResponse.ok) {
+        debugLog('response.ok is false', {
+          ok: statusResponse.ok,
+          status: statusResponse.status,
+          statusText: statusResponse.statusText,
+          headers: statusResponse.headers,
+        });
         throw new Error(await statusResponse.text());
       }
 
@@ -900,7 +944,7 @@ export async function createQuoteTweetRequest(
   auth: TwitterAuth,
   mediaData?: { data: Buffer; mediaType: string }[],
 ) {
-  const onboardingTaskUrl = 'https://api.twitter.com/1.1/onboarding/task.json';
+  const onboardingTaskUrl = 'https://api.x.com/1.1/onboarding/task.json';
 
   // Retrieve necessary cookies and tokens
   const cookies = await auth.cookieJar().getCookies(onboardingTaskUrl);
@@ -1002,6 +1046,12 @@ export async function createQuoteTweetRequest(
 
   // Check for errors in the response
   if (!response.ok) {
+    debugLog('response.ok is false', {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
     throw new Error(await response.text());
   }
 
@@ -1054,6 +1104,12 @@ export async function likeTweet(
 
   // Check for errors in the response
   if (!response.ok) {
+    debugLog('response.ok is false', {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
     throw new Error(await response.text());
   }
 }
@@ -1105,6 +1161,12 @@ export async function retweet(
 
   // Check for errors in the response
   if (!response.ok) {
+    debugLog('response.ok is false', {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
     throw new Error(await response.text());
   }
 }
@@ -1118,7 +1180,7 @@ export async function createCreateLongTweetRequest(
   // URL for the long tweet endpoint
   const url =
     'https://x.com/i/api/graphql/YNXM2DGuE2Sff6a2JD3Ztw/CreateNoteTweet';
-  const onboardingTaskUrl = 'https://api.twitter.com/1.1/onboarding/task.json';
+  const onboardingTaskUrl = 'https://api.x.com/1.1/onboarding/task.json';
 
   const cookies = await auth.cookieJar().getCookies(onboardingTaskUrl);
   const xCsrfToken = cookies.find((cookie) => cookie.key === 'ct0');
@@ -1207,6 +1269,12 @@ export async function createCreateLongTweetRequest(
 
   // check for errors
   if (!response.ok) {
+    debugLog('response.ok is false', {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
     throw new Error(await response.text());
   }
 
@@ -1325,6 +1393,12 @@ export async function fetchRetweetersPage(
   await updateCookieJar(auth.cookieJar(), response.headers);
 
   if (!response.ok) {
+    debugLog('response.ok is false', {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
     throw new Error(await response.text());
   }
 

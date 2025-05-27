@@ -89,6 +89,8 @@ import {
   LoginTwitterTokenResponse,
   Subtopic,
 } from './types/spaces';
+import debug from 'debug';
+const debugLog = debug('agent-twitter-client:scraper');
 
 const twUrl = 'https://twitter.com';
 const UserTweetsUrl =
@@ -706,6 +708,7 @@ export class Scraper {
   public async setCookies(cookies: (string | Cookie)[]): Promise<void> {
     const userAuth = new TwitterUserAuth(this.token, this.getAuthOptions());
     for (const cookie of cookies) {
+      debugLog('setCookie', cookie);
       await userAuth.cookieJar().setCookie(cookie, twUrl);
     }
 

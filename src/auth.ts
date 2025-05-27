@@ -4,6 +4,10 @@ import { Headers } from 'headers-polyfill';
 import { FetchTransformOptions } from './api';
 import { Profile } from './profile';
 
+import debug from 'debug';
+
+const debugLog = debug('agent-twitter-client:auth');
+
 export interface TwitterAuthOptions {
   fetch: typeof fetch;
   transform: Partial<FetchTransformOptions>;

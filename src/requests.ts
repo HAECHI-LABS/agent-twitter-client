@@ -1,6 +1,9 @@
 import { Cookie, CookieJar } from 'tough-cookie';
 import setCookie from 'set-cookie-parser';
 import type { Headers as HeadersPolyfill } from 'headers-polyfill';
+import debug from 'debug';
+
+const debugLog = debug('agent-twitter-client:requests');
 
 /**
  * Updates a cookie jar with the Set-Cookie headers from the provided Headers instance.
@@ -15,7 +18,15 @@ export async function updateCookieJar(
   if (setCookieHeader) {
     const cookies = setCookie.splitCookiesString(setCookieHeader);
     for (const cookie of cookies.map((c) => Cookie.parse(c))) {
-      if (!cookie) continue;
+      if (!cookie) {
+        debugLog('updateCookieJar', 'cookie is null', {
+          cookie,
+        });
+        continue;
+      }
+
+      debugLog('updateCookieJar', cookie);
+
       await cookieJar.setCookie(
         cookie,
         `${cookie.secure ? 'https' : 'http'}://${cookie.domain}${cookie.path}`,
@@ -25,6 +36,9 @@ export async function updateCookieJar(
     for (const cookie of document.cookie.split(';')) {
       const hardCookie = Cookie.parse(cookie);
       if (hardCookie) {
+        debugLog('updateCookieJar', 'hardCookie', {
+          hardCookie,
+        });
         await cookieJar.setCookie(hardCookie, document.location.toString());
       }
     }
