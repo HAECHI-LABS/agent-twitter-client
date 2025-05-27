@@ -126,8 +126,7 @@ export class TwitterUserAuth extends TwitterGuestAuth {
       } else if (next.subtask.subtask_id === 'LoginAcid') {
         next = await this.handleAcid(next, email);
       } else if (next.subtask.subtask_id === 'LoginSuccessSubtask') {
-        await this.handleSuccessSubtask(next);
-        break;
+        next = await this.handleSuccessSubtask(next);
       } else {
         throw new Error(`Unknown subtask ${next.subtask.subtask_id}`);
       }
