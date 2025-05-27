@@ -114,7 +114,6 @@ export interface ScraperOptions {
  */
 export class Scraper {
   private auth!: TwitterAuth;
-  private authTrends!: TwitterAuth;
   private token: string;
 
   /**
@@ -134,7 +133,6 @@ export class Scraper {
    */
   private useGuestAuth() {
     this.auth = new TwitterGuestAuth(this.token, this.getAuthOptions());
-    this.authTrends = new TwitterGuestAuth(this.token, this.getAuthOptions());
   }
 
   /**
@@ -435,14 +433,6 @@ export class Scraper {
   }
 
   /**
-   * Fetches the current trends from Twitter.
-   * @returns The current list of trends.
-   */
-  public getTrends(): Promise<string[]> {
-    return getTrends(this.authTrends);
-  }
-
-  /**
    * Fetches tweets from a Twitter user.
    * @param user The user whose tweets should be returned.
    * @param maxTweets The maximum number of tweets to return. Defaults to `200`.
@@ -633,7 +623,7 @@ export class Scraper {
    * @returns `true` if the scraper has a guest token; otherwise `false`.
    */
   public hasGuestToken(): boolean {
-    return this.auth.hasToken() || this.authTrends.hasToken();
+    return this.auth.hasToken();
   }
 
   /**
@@ -641,9 +631,7 @@ export class Scraper {
    * @returns `true` if the scraper is logged in with a real user account; otherwise `false`.
    */
   public async isLoggedIn(): Promise<boolean> {
-    return (
-      (await this.auth.isLoggedIn()) && (await this.authTrends.isLoggedIn())
-    );
+    return await this.auth.isLoggedIn();
   }
 
   /**
@@ -672,7 +660,6 @@ export class Scraper {
     const userAuth = new TwitterUserAuth(this.token, this.getAuthOptions());
     await userAuth.login(username, password, email, twoFactorSecret);
     this.auth = userAuth;
-    this.authTrends = userAuth;
   }
 
   /**
@@ -680,7 +667,6 @@ export class Scraper {
    */
   public async logout(): Promise<void> {
     await this.auth.logout();
-    await this.authTrends.logout();
 
     // Swap in guest authorizers for all requests
     this.useGuestAuth();
@@ -691,7 +677,7 @@ export class Scraper {
    * @returns All cookies for the current session.
    */
   public async getCookies(): Promise<Cookie[]> {
-    const cookiejar = this.authTrends.cookieJar();
+    const cookiejar = this.auth.cookieJar();
 
     // 원래는 twitter.com 만 사용했었음.
     // 25/05/26 에서 login이 x.com 도메인을 사용하게 만들어서 섞임.
@@ -724,7 +710,6 @@ export class Scraper {
     }
 
     this.auth = userAuth;
-    this.authTrends = userAuth;
   }
 
   /**
@@ -732,7 +717,6 @@ export class Scraper {
    */
   public async clearCookies(): Promise<void> {
     await this.auth.cookieJar().removeAllCookies();
-    await this.authTrends.cookieJar().removeAllCookies();
   }
 
   /**
