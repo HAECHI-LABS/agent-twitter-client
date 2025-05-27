@@ -161,10 +161,10 @@ export class TwitterUserAuth extends TwitterGuestAuth {
   async installTo(headers: Headers): Promise<void> {
     headers.set('authorization', `Bearer ${this.bearerToken}`);
     headers.set('cookie', await this.getCookieString());
-    debugLog('installTo', {
-      headers,
-      cookie: await this.getCookieString(),
-    });
+    // debugLog('installTo', {
+    //   headers,
+    //   cookie: await this.getCookieString(),
+    // });
     await this.installCsrfToken(headers);
   }
 
