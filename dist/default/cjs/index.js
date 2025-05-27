@@ -679,8 +679,7 @@ class TwitterUserAuth extends TwitterGuestAuth {
       } else if (next.subtask.subtask_id === "LoginAcid") {
         next = await this.handleAcid(next, email);
       } else if (next.subtask.subtask_id === "LoginSuccessSubtask") {
-        await this.handleSuccessSubtask(next);
-        break;
+        next = await this.handleSuccessSubtask(next);
       } else {
         throw new Error(`Unknown subtask ${next.subtask.subtask_id}`);
       }
@@ -711,10 +710,6 @@ class TwitterUserAuth extends TwitterGuestAuth {
   async installTo(headers) {
     headers.set("authorization", `Bearer ${this.bearerToken}`);
     headers.set("cookie", await this.getCookieString());
-    debugLog$2("installTo", {
-      headers,
-      cookie: await this.getCookieString()
-    });
     await this.installCsrfToken(headers);
   }
   async initLogin() {
@@ -3988,6 +3983,8 @@ class Scraper {
     for (const cookie of cookies) {
       debugLog("setCookie", cookie);
       await userAuth.cookieJar().setCookie(cookie, twUrl);
+      await userAuth.cookieJar().setCookie(cookie, "https://x.com");
+      await userAuth.cookieJar().setCookie(cookie, "https://api.x.com/1.1/onboarding/task.json");
     }
     this.auth = userAuth;
   }
